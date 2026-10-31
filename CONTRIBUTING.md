@@ -95,6 +95,7 @@ branch named `awesome-feature-42` in this repo:
 
 ## Publishing releases
 
-Release publication is restricted to project maintainers. See the
-[release guide](docs/releasing.md) for the PyPI and TestPyPI Trusted Publisher
-setup, release procedure, verification steps, and failure recovery.
+Publishing to PyPI is turned off in this fork: the release workflow's publish
+jobs only run when the repository variable `PUBLISH_ENABLED` is `true`, and the
+`google-ads-mcp` name on PyPI belongs to Google's upstream package. Install from
+GitHub as described in the README.

@@ -206,7 +206,6 @@ Upload these 3 videos as unlisted and turn them into video assets for my Perform
 - [Hosting over HTTP with Google sign-in, Cloud Run and Podman](docs/hosting.md), for Claude.ai, ChatGPT and shared servers
 - [Advanced configuration](docs/configuration.md): tool groups, prefixes, MCP resources and `google-ads.yaml`
 - [Agent skill](skills/google-ads-mcp/SKILL.md): setup and usage guide for agents
-- [Release process](docs/releasing.md)
 
 ## Contributing and licence
 
