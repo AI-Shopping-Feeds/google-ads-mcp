@@ -37,7 +37,7 @@ def get_discovery_document() -> str:
     Returns:
         str: The discovery document in JSON format.
     """
-    url = "https://googleads.googleapis.com/$discovery/rest?version=v25"
+    url = "https://googleads.googleapis.com/$discovery/rest?version=v26"
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0"},
