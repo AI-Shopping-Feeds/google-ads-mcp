@@ -28,7 +28,8 @@ import tempfile
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Literal
-from fastmcp import FastMCP
+import anyio
+from fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 
 import ads_mcp.utils as utils
@@ -157,12 +158,51 @@ def _upload_request(
     return {"customer_id": customer_id, "you_tube_video_upload": upload}
 
 
+def _upload_one(
+    service: Any,
+    cid: str,
+    video: Dict[str, Any],
+    channel_id: str | None,
+    workdir: str,
+) -> Dict[str, Any]:
+    """Uploads one video and returns its result entry. Never raises."""
+    source = video.get("path") or video.get("url")
+    entry: Dict[str, Any] = {"source": source, "title": video.get("title")}
+    try:
+        if bool(video.get("path")) == bool(video.get("url")):
+            raise ValueError("Give exactly one of 'path' or 'url'.")
+        request = _upload_request(cid, video, channel_id)
+        local = (
+            _resolve_local_path(video["path"])
+            if video.get("path")
+            else _download(video["url"], workdir)
+        )
+        content_type = (
+            mimetypes.guess_type(local)[0] or "application/octet-stream"
+        )
+        utils.logger.info("ads_mcp.upload_videos %s", source)
+        session = service.create_you_tube_video_upload(request=request)
+        with open(local, "rb") as stream:
+            response = session.upload(
+                stream,
+                size=os.path.getsize(local),
+                content_type=content_type,
+            )
+        entry["resource_name"] = getattr(response, "resource_name", None)
+        entry["status"] = "uploaded"
+    except Exception as ex:  # one bad video must not stop the batch
+        entry["status"] = "error"
+        entry["error"] = str(ex)
+    return entry
+
+
 @youtube_mcp.tool(
     annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False)
 )
-def upload_videos(
+async def upload_videos(
     customer_id: str | int,
     videos: List[Dict[str, Any]],
+    ctx: Context,
     channel_id: str | None = None,
     login_customer_id: str | int | None = None,
 ) -> Dict[str, Any]:
@@ -196,40 +236,16 @@ def upload_videos(
     results = []
     workdir = tempfile.mkdtemp(prefix="ads-mcp-video-")
     try:
-        for video in videos:
-            source = video.get("path") or video.get("url")
-            entry: Dict[str, Any] = {
-                "source": source,
-                "title": video.get("title"),
-            }
-            try:
-                if bool(video.get("path")) == bool(video.get("url")):
-                    raise ValueError("Give exactly one of 'path' or 'url'.")
-                request = _upload_request(cid, video, channel_id)
-                local = (
-                    _resolve_local_path(video["path"])
-                    if video.get("path")
-                    else _download(video["url"], workdir)
-                )
-                content_type = (
-                    mimetypes.guess_type(local)[0] or "application/octet-stream"
-                )
-                utils.logger.info("ads_mcp.upload_videos %s", source)
-                session = service.create_you_tube_video_upload(request=request)
-                with open(local, "rb") as stream:
-                    response = session.upload(
-                        stream,
-                        size=os.path.getsize(local),
-                        content_type=content_type,
-                    )
-                entry["resource_name"] = getattr(
-                    response, "resource_name", None
-                )
-                entry["status"] = "uploaded"
-            except Exception as ex:  # one bad video must not stop the batch
-                entry["status"] = "error"
-                entry["error"] = str(ex)
+        await ctx.report_progress(0, len(videos), "Starting uploads")
+        for i, video in enumerate(videos, start=1):
+            # Uploads block on network I/O, so run them off the event loop.
+            entry = await anyio.to_thread.run_sync(
+                _upload_one, service, cid, video, channel_id, workdir
+            )
             results.append(entry)
+            await ctx.report_progress(
+                i, len(videos), f"{entry['status']}: {entry['source']}"
+            )
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
