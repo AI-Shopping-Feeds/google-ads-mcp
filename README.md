@@ -216,3 +216,7 @@ Licensed under the [Apache License 2.0](LICENSE). Based on [googleads/google-ads
 
 - The server sends your Google Ads data to the agent or LLM you connect it to.
 - Upstream adds an extra header to API calls so Google can measure usage of the MCP server.
+
+---
+
+Try out [AI Shopping Feeds](https://aishoppingfeeds.com/), our shopping feed management tool (including Google Shopping feeds).
