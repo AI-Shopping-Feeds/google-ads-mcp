@@ -1,8 +1,25 @@
-# Google Ads MCP Server
+# Google Ads MCP Server (read + write)
 
 This repo contains the source code for running an
 [MCP](https://modelcontextprotocol.io) server that interacts with the
 [Google Ads API](https://developers.google.com/google-ads/api).
+
+This is a fork of [googleads/google-ads-mcp](https://github.com/googleads/google-ads-mcp),
+maintained by [AI Shopping Feeds](https://github.com/AI-Shopping-Feeds). The
+upstream server is read-only. This fork:
+
+- targets **Google Ads API v26** (`google-ads>=35.0.0`),
+- adds **write tools**: create, update and remove any resource through
+  `GoogleAdsService.Mutate`, plus shortcuts for common changes,
+- adds **Keyword Planner** and geo-target lookup tools,
+- exposes **every Google Ads API service method** (112 services in v26) through
+  a generic `call_service` tool, for conversion uploads, Customer Match, reach
+  planning, account creation and the rest,
+- keeps a **read-only mode** (`GOOGLE_ADS_MCP_READ_ONLY=true`).
+
+> **Using an AI agent?** Point it at [`skills/google-ads-mcp/SKILL.md`](skills/google-ads-mcp/SKILL.md).
+> It covers installing the server, connecting it to the agent's MCP client and
+> using the tools safely.
 
 ## Tools
 
@@ -13,10 +30,51 @@ to provide several
 
 ### Tools available
 
-- `search`: Retrieves information about the Google Ads account.
-- `get_resource_metadata`: Retrieves metadata about a Google Ads API resource type, for example "campaign". This is useful to understand the structure of the data and what fields are available for querying.
-- `list_accessible_customers`: Returns ids of customers directly accessible
-  by the user authenticating the call.
+Tool names are prefixed with their namespace, e.g. `search_search`,
+`mutate_update_campaign_status`.
+
+**Read**
+
+| Namespace | Tool | What it does |
+|---|---|---|
+| `customers` | `list_accessible_customers` | IDs of the customers the authenticated user can access. |
+| `search` | `search` | Runs a GAQL query (reports, settings, structure, change history). |
+| `metadata` | `get_resource_metadata` | Selectable, filterable and sortable fields for a resource. |
+| `planning` | `generate_keyword_ideas` | Keyword Planner ideas from keywords, a URL or a site. |
+| `planning` | `generate_keyword_historical_metrics` | Search volume history, competition and bids for keywords. |
+| `planning` | `suggest_geo_targets` | Looks up geo target IDs (countries, regions, cities) by name. |
+| `services` | `list_services` | Lists every API service and method, and a method's request fields. |
+
+**Write** (these change live accounts; every tool accepts `validate_only`)
+
+| Namespace | Tool | What it does |
+|---|---|---|
+| `mutate` | `mutate` | Any create/update/remove across all 65 mutate operation types, atomically, with temporary IDs and partial failure. |
+| `mutate` | `update_campaign_status` | Enables or pauses campaigns. |
+| `mutate` | `update_ad_group_status` | Enables or pauses ad groups. |
+| `mutate` | `update_ad_status` | Enables or pauses ads. |
+| `mutate` | `update_campaign_budget` | Sets a budget's daily amount. |
+| `mutate` | `add_keywords` | Adds keywords to an ad group. |
+| `mutate` | `add_negative_keywords` | Adds negative keywords to a campaign or ad group. |
+| `mutate` | `update_keyword` | Changes a keyword's status or max CPC. |
+| `mutate` | `remove_resources` | Removes resources by resource name. |
+| `mutate` | `apply_recommendations` | Applies Google Ads recommendations. |
+| `mutate` | `dismiss_recommendations` | Dismisses Google Ads recommendations. |
+| `services` | `call_service` | Calls any service method, e.g. `ConversionUploadService.upload_click_conversions`. |
+
+### Write safety and read-only mode
+
+- Every write tool takes `validate_only`. With `true`, Google validates the
+  request and returns any errors without changing the account. Agents should
+  preview writes this way first.
+- `mutate` is atomic by default: if one operation fails, none are applied.
+  Pass `partial_failure: true` to apply the valid ones.
+- Write tools carry MCP annotations (`readOnlyHint: false`, and
+  `destructiveHint: true` for removals and `call_service`), so clients that ask
+  for confirmation before destructive tools will do so.
+- Set `GOOGLE_ADS_MCP_READ_ONLY=true` to drop every tool that can change an
+  account. You can also disable the `mutate` and `services` namespaces in
+  `tools_config.yaml`.
 
 ### Configuring and Namespacing Tools
 
@@ -58,7 +116,7 @@ namespaces:
 ## Notes
 
 1.  The MCP Server will expose your data to the Agent or LLM that you connect to it.
-1.  If you have technical issues, please use the [GitHub issue tracker](https://github.com/googleads/google-ads-mcp/issues).
+1.  If you have technical issues, please use the [GitHub issue tracker](https://github.com/AI-Shopping-Feeds/google-ads-mcp/issues).
 1.  To help us collect usage data, you will notice an extra header has been added to your API calls: this data is used to improve the product.
 
 ## Setup instructions
@@ -75,12 +133,20 @@ Setup involves the following steps:
 
 [Install pipx](https://pipx.pypa.io/stable/#install-pipx).
 
-After a version has been published to PyPI, you can run that exact version
-instead of following the latest repository state:
+Run the server straight from this repository (the `google-ads-mcp` package on
+PyPI is the read-only upstream release):
 
 ```shell
-pipx run --spec "google-ads-mcp==X.Y.Z" google-ads-mcp
+pipx run --spec "git+https://github.com/AI-Shopping-Feeds/google-ads-mcp.git" google-ads-mcp
 ```
+
+Or with [uv](https://docs.astral.sh/uv/):
+
+```shell
+uvx --from "git+https://github.com/AI-Shopping-Feeds/google-ads-mcp.git" google-ads-mcp
+```
+
+Pin a release by adding `@vX.Y.Z` to the URL.
 
 ### Configure Developer Token (Optional)
 
@@ -189,11 +255,9 @@ codex mcp login google_ads
 For Antigravity, configure the same URL as `serverUrl` in its MCP configuration.
 This key is required for Streamable HTTP in Antigravity 2.8.1 and Antigravity
 IDE 2.5.5; `httpUrl` is not accepted by those versions. After authentication,
-both clients should list these namespaced tools:
-
-- `customers_list_accessible_customers`
-- `metadata_get_resource_metadata`
-- `search_search`
+both clients should list the namespaced tools from
+[Tools available](#tools-available), such as
+`customers_list_accessible_customers`, `search_search` and `mutate_mutate`.
 
 #### Option 2: Configure credentials using Application Default Credentials
 
@@ -307,7 +371,7 @@ popular clients.
           "args": [
             "run",
             "--spec",
-            "git+https://github.com/googleads/google-ads-mcp.git",
+            "git+https://github.com/AI-Shopping-Feeds/google-ads-mcp.git",
             "google-ads-mcp"
           ],
           "env": {
@@ -330,7 +394,7 @@ popular clients.
           "args": [
             "run",
             "--spec",
-            "git+https://github.com/googleads/google-ads-mcp.git",
+            "git+https://github.com/AI-Shopping-Feeds/google-ads-mcp.git",
             "google-ads-mcp"
           ],
           "env": {
@@ -362,7 +426,7 @@ The final file will look like this:
         "args": [
           "run",
           "--spec",
-          "git+https://github.com/googleads/google-ads-mcp.git",
+          "git+https://github.com/AI-Shopping-Feeds/google-ads-mcp.git",
           "google-ads-mcp"
         ],
         "env": {
@@ -376,9 +440,25 @@ The final file will look like this:
   }
   ```
 
-#### Other MCP clients (Claude Code, Cursor, VS Code, etc.)
+#### Claude Code
 
-The `mcpServers` block format is the same across all MCP clients. Add the configuration shown above to the appropriate settings file for your client (e.g., `~/.claude/settings.json` for Claude Code, `.cursor/mcp.json` for Cursor, `.vscode/mcp.json` for VS Code with Copilot).
+```shell
+claude mcp add google-ads --scope user \
+  -e GOOGLE_APPLICATION_CREDENTIALS=PATH_TO_CREDENTIALS_JSON \
+  -e GOOGLE_PROJECT_ID=YOUR_PROJECT_ID \
+  -e GOOGLE_ADS_DEVELOPER_TOKEN=YOUR_DEVELOPER_TOKEN \
+  -- pipx run --spec git+https://github.com/AI-Shopping-Feeds/google-ads-mcp.git google-ads-mcp
+```
+
+Use `--scope project` to write a shareable `.mcp.json` instead (keep secrets
+out of it by using environment variables).
+
+#### Other MCP clients (Claude Desktop, Cursor, VS Code, etc.)
+
+The `mcpServers` block format is the same across MCP clients. Add the
+configuration shown above to your client's settings file, e.g.
+`claude_desktop_config.json` for Claude Desktop, `.cursor/mcp.json` for Cursor,
+or `.vscode/mcp.json` for VS Code with Copilot.
 
 ## Deployment to Google Cloud Platform
 
