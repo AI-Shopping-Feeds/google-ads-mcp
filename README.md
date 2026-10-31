@@ -22,9 +22,31 @@ upstream server is read-only. This fork:
   planning, account creation and the rest,
 - keeps a **read-only mode** (`GOOGLE_ADS_MCP_READ_ONLY=true`).
 
-> **Using an AI agent?** Point it at [`skills/google-ads-mcp/SKILL.md`](skills/google-ads-mcp/SKILL.md).
-> It covers installing the server, connecting it to the agent's MCP client and
-> using the tools safely.
+> **Using an AI agent?** See [Let your agent set it up](#let-your-agent-set-it-up).
+
+## Let your agent set it up
+
+Paste this into Claude Code, Codex, Cursor or any agent that can read web pages and edit files:
+
+```text
+Set up the Google Ads MCP server for me by following https://raw.githubusercontent.com/AI-Shopping-Feeds/google-ads-mcp/main/skills/google-ads-mcp/SKILL.md
+```
+
+The agent:
+- checks whether it's already connected
+- installs the runner if you agree
+- walks you through the credentials
+- adds the server to your client's config without touching your other servers
+- checks it works by calling `customers_list_accessible_customers`
+
+The same file is an [Agent Skill](https://agentskills.io), so your agent can keep it as a guide to using the tools well. For Claude Code, copy the folder into your skills:
+
+```bash
+git clone --depth 1 https://github.com/AI-Shopping-Feeds/google-ads-mcp.git /tmp/google-ads-mcp
+cp -r /tmp/google-ads-mcp/skills/google-ads-mcp ~/.claude/skills/
+```
+
+Other agents that support skills load the same `skills/google-ads-mcp` folder from their own skills directory.
 
 ## Tools
 
