@@ -15,6 +15,8 @@ upstream server is read-only. This fork:
 - adds a one-call **policy issues** report (disapproved ads, keywords and assets
   with reasons), **offline conversion uploads**, **Merchant Center linking**
   and **MCC account hierarchy**,
+- adds **YouTube video uploads** through the Ads API's
+  `YouTubeVideoUploadService`, so videos can go straight into video ads,
 - exposes **every Google Ads API service method** (112 services in v26) through
   a generic `call_service` tool, for conversion uploads, Customer Match, reach
   planning, account creation and the rest,
@@ -44,6 +46,7 @@ Tool names are prefixed with their namespace, e.g. `search_search`,
 | `customers` | `get_account_hierarchy` | Every account under a manager (MCC) account, at all levels. |
 | `policy` | `list_policy_issues` | Disapproved and limited ads, keywords and ad assets with policy topics and evidence, plus a top-reasons summary. |
 | `merchant_center` | `list_links` | Linked Merchant Center accounts and pending link invitations. |
+| `youtube` | `list_video_uploads` | Processing state and YouTube video ID of uploaded videos. |
 | `search` | `search` | Runs a GAQL query (reports, settings, structure, change history). |
 | `metadata` | `get_resource_metadata` | Selectable, filterable and sortable fields for a resource. |
 | `planning` | `generate_keyword_ideas` | Keyword Planner ideas from keywords, a URL or a site. |
@@ -70,6 +73,8 @@ Tool names are prefixed with their namespace, e.g. `search_search`,
 | `merchant_center` | `invite_link` | Invites a Merchant Center account to link to the Ads account. |
 | `merchant_center` | `respond_to_invitation` | Accepts or rejects a link invitation from Merchant Center. |
 | `merchant_center` | `remove_link` | Unlinks a Merchant Center account. |
+| `youtube` | `upload_videos` | Uploads videos (local files or URLs) to YouTube through the Ads API, no YouTube Data API project needed. |
+| `youtube` | `create_video_assets` | Turns YouTube video IDs into assets ready to attach to Performance Max, Demand Gen or Video ads. |
 | `services` | `call_service` | Calls any service method, e.g. `ConversionUploadService.upload_click_conversions`. |
 
 ### Write safety and read-only mode
@@ -83,7 +88,12 @@ Tool names are prefixed with their namespace, e.g. `search_search`,
   `destructiveHint: true` for removals, unlinking and `call_service`), so clients that ask
   for confirmation before destructive tools will do so.
 - Set `GOOGLE_ADS_MCP_READ_ONLY=true` to drop every tool that can change an
-  account. You can also disable the `mutate` and `services` namespaces in
+  account.
+- `youtube_upload_videos` reads local files only inside
+  `GOOGLE_ADS_MCP_UPLOAD_DIR` when that's set. On a hosted (OAuth/HTTP) server,
+  local paths are off unless it's set. URL downloads must resolve to public
+  addresses, including after redirects, and are capped at
+  `GOOGLE_ADS_MCP_MAX_DOWNLOAD_MB` (default 2048). You can also disable the `mutate` and `services` namespaces in
   `tools_config.yaml`.
 
 ### Configuring and Namespacing Tools

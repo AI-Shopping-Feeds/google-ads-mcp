@@ -2005,6 +2005,242 @@
         "type": "object"
       },
       "title": "Services List Services"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Creates YouTube video assets from video IDs, ready to attach to ads.\n\nAttach the returned asset resource names with `mutate`:\nPerformance Max: asset_group_asset_operation with field_type YOUTUBE_VIDEO;\nDemand Gen: ad_group_ad with demand_gen_video_responsive_ad.videos;\nVideo campaigns: video_responsive_ad.videos.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the Google Ads customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          },
+          "videos": {
+            "description": "Items of the form {\"video_id\": \"dQw4w9WgXcQ\", \"name\": \"Spring promo\"}.\nUse the 11-character YouTube ID, not a URL.",
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "customer_id",
+          "videos"
+        ],
+        "type": "object"
+      },
+      "name": "youtube_create_video_assets",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Youtube Create Video Assets"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Lists videos uploaded through the Google Ads API with their processing state and YouTube video ID.\n\nStates: PENDING and UPLOADED are still in progress; PROCESSED means the\nvideo is ready and `video_id` is set; FAILED, REJECTED and UNAVAILABLE\nmean it can't be used.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the Google Ads customer."
+          },
+          "limit": {
+            "default": 100,
+            "description": "Maximum rows to return.",
+            "type": "integer"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "resource_names": {
+            "default": [],
+            "description": "Only these uploads (from upload_videos).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "states": {
+            "default": [],
+            "description": "Only uploads in these states.",
+            "items": {
+              "enum": [
+                "PENDING",
+                "UPLOADED",
+                "PROCESSED",
+                "FAILED",
+                "REJECTED",
+                "UNAVAILABLE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "type": "object"
+      },
+      "name": "youtube_list_video_uploads",
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "type": "object",
+        "x-fastmcp-wrap-result": true
+      },
+      "title": "Youtube List Video Uploads"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Uploads videos to YouTube through the Google Ads API, ready to use in video ads.\n\nEach video is streamed from a local file or a public URL; never pass video\nbytes as arguments. Videos upload one after another and a failure is\nreported without stopping the rest. Large files can take minutes each, so\nupload a few at a time.\n\nUploads are processed by YouTube afterwards: call `list_video_uploads`\nuntil `state` is PROCESSED to get the `video_id`, then\n`create_video_assets`.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Your brand channel ID (starts with UC). Omit to upload to\nthe Google-managed channel for this Ads account (UNLISTED only).\nUploading to your own channel needs user OAuth credentials."
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the Google Ads customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "videos": {
+            "description": "Items of the form {\"path\": \"/videos/a.mp4\"} or\n{\"url\": \"https://...\"}, plus \"title\" (required, max 100 chars),\noptional \"description\" (max 5000 chars; neither may contain < or >),\n\"privacy\" (\"UNLISTED\" default, or \"PUBLIC\" on your own channel) and\n\"ai_generated\" (true/false, the generative-content disclosure).",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "customer_id",
+          "videos"
+        ],
+        "type": "object"
+      },
+      "name": "youtube_upload_videos",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Youtube Upload Videos"
     }
   ]
 }

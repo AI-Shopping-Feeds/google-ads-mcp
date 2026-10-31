@@ -5,8 +5,9 @@
 
 #
 # Tools that can change an account live in the `mutate`, `services`,
-# `conversions` and `merchant_center` namespaces. Set them to false here, or
-# set GOOGLE_ADS_MCP_READ_ONLY=true, to run the server read-only.
+# `conversions`, `merchant_center` and `youtube` namespaces. Set them to
+# false here, or set GOOGLE_ADS_MCP_READ_ONLY=true, to run the server
+# read-only.
 
 namespaces:
   customers: true
@@ -18,3 +19,4 @@ namespaces:
   policy: true
   conversions: true
   merchant_center: true
+  youtube: true

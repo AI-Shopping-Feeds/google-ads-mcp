@@ -86,7 +86,9 @@ Names are `<namespace>_<tool>`.
   `mutate_remove_resources`, `mutate_apply_recommendations`,
   `mutate_dismiss_recommendations`, `conversions_upload_click_conversions`,
   `merchant_center_invite_link`, `merchant_center_respond_to_invitation`,
-  `merchant_center_remove_link`, `services_call_service` (any RPC).
+  `merchant_center_remove_link`, `youtube_upload_videos`,
+  `youtube_create_video_assets`, `services_call_service` (any RPC).
+- Read (YouTube): `youtube_list_video_uploads`.
 
 ## 3. How to work
 
@@ -189,6 +191,23 @@ shows existing links and invitations. Then either:
 - `merchant_center_invite_link` sends an invitation, which a Merchant Center
   admin then accepts, or
 - `merchant_center_respond_to_invitation` accepts one that Merchant Center sent.
+
+**Bulk upload videos and use them in ads:**
+1. `youtube_upload_videos` with `[{"path": "/abs/video.mp4" or "url": "https://...",
+   "title": "...", "description": "...", "ai_generated": false}]`.
+   - Titles can be up to 100 characters and descriptions up to 5,000, and
+     neither can contain `<` or `>`.
+   - Without `channel_id`, videos go to a Google-managed channel for the Ads
+     account and are UNLISTED only. To publish on the user's own brand
+     channel, pass its `UC...` ID; that needs user OAuth credentials.
+   - Set `ai_generated` honestly for AI-made videos.
+2. Poll `youtube_list_video_uploads` with the returned resource names until
+   `state` is `PROCESSED` (`FAILED` or `REJECTED` means stop and report).
+3. `youtube_create_video_assets` with the `video_id` values.
+4. Attach the assets with `mutate_mutate`. For Performance Max, use
+   `asset_group_asset_operation` with `field_type: "YOUTUBE_VIDEO"`. For
+   Demand Gen, use `ad_group_ad` with `demand_gen_video_responsive_ad.videos`.
+   Create new ads as PAUSED, and confirm with the user before enabling them.
 
 **Work across an MCC:** `customers_get_account_hierarchy` with the manager ID,
 then pass that manager ID as `login_customer_id` on other tools.

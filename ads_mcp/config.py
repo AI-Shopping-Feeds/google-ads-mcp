@@ -38,6 +38,7 @@ ALL_CATEGORIES = [
     "policy",
     "conversions",
     "merchant_center",
+    "youtube",
 ]
 
 
