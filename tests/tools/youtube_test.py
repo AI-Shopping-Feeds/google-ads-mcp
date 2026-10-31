@@ -14,6 +14,7 @@
 
 """Test cases for the YouTube upload tools."""
 
+import asyncio
 import os
 import tempfile
 import unittest
@@ -30,6 +31,23 @@ from google.ads.googleads.v26.services.types.youtube_video_upload_service import
 )
 
 from ads_mcp.tools import youtube
+
+
+class FakeContext:
+    """Records progress reported by a tool."""
+
+    def __init__(self):
+        self.progress = []
+
+    async def report_progress(self, progress, total=None, message=None):
+        self.progress.append((progress, total, message))
+
+
+def _upload(ctx=None, **kwargs):
+    """Runs the async upload tool with a fake Context."""
+    return asyncio.run(
+        youtube.upload_videos(ctx=ctx or FakeContext(), **kwargs)
+    )
 
 
 class FakeSession:
@@ -68,7 +86,7 @@ class TestYouTubeTools(unittest.TestCase):
         self.addCleanup(env.stop)
 
     def test_upload_from_path(self):
-        result = youtube.upload_videos(
+        result = _upload(
             customer_id="123-456-7890",
             videos=[
                 {
@@ -103,7 +121,7 @@ class TestYouTubeTools(unittest.TestCase):
         )
 
     def test_bad_video_does_not_stop_batch(self):
-        result = youtube.upload_videos(
+        result = _upload(
             customer_id="1",
             videos=[
                 {"path": self.video, "title": "<bad>"},
@@ -129,7 +147,7 @@ class TestYouTubeTools(unittest.TestCase):
             },
         ):
             os.environ.pop(youtube.UPLOAD_DIR_ENV_VAR)
-            result = youtube.upload_videos(
+            result = _upload(
                 customer_id="1", videos=[{"path": self.video, "title": "A"}]
             )
 
@@ -137,7 +155,7 @@ class TestYouTubeTools(unittest.TestCase):
         self.service.create_you_tube_video_upload.assert_not_called()
 
     def test_url_to_private_host_is_rejected(self):
-        result = youtube.upload_videos(
+        result = _upload(
             customer_id="1",
             videos=[{"url": "http://127.0.0.1/video.mp4", "title": "A"}],
         )
@@ -153,7 +171,7 @@ class TestYouTubeTools(unittest.TestCase):
             return path
 
         with patch.object(youtube, "_download", side_effect=fake_download):
-            result = youtube.upload_videos(
+            result = _upload(
                 customer_id="1",
                 videos=[{"url": "https://cdn.example.com/a.mp4", "title": "A"}],
             )

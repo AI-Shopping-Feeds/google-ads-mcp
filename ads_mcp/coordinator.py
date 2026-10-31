@@ -20,8 +20,11 @@ of the server.
 """
 
 import os
+from importlib import metadata
 from typing import Any
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
+from fastmcp.server.middleware import Middleware, MiddlewareContext
 from fastmcp.server.auth.providers.google import GoogleProvider
 from mcp import types as mcp_types
 from mcp.server.subscriptions import InMemorySubscriptionBus, ListenHandler
@@ -31,6 +34,29 @@ _CLIENT_ID = os.environ.get("GOOGLE_ADS_MCP_OAUTH_CLIENT_ID")
 _CLIENT_SECRET = os.environ.get("GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET")
 _BASE_URL = os.environ.get("GOOGLE_ADS_MCP_BASE_URL", "http://localhost:8080")
 _JWT_SIGNING_KEY = os.environ.get("GOOGLE_ADS_MCP_JWT_SIGNING_KEY")
+
+try:
+    SERVER_VERSION = metadata.version("google-ads-mcp")
+except metadata.PackageNotFoundError:
+    SERVER_VERSION = "0.0.0"
+
+INSTRUCTIONS = """\
+Google Ads MCP: read and change Google Ads accounts through the Google Ads API v26.
+- Find accounts with customers_list_accessible_customers (or customers_get_account_hierarchy for a manager account); pass login_customer_id when working through a manager.
+- Before writing GAQL for search_search, look up field names with metadata_get_resource_metadata.
+- Write tools change live accounts and spend money: call them with validate_only=true first, show the person what will change, and only then apply it.
+- policy_list_policy_issues explains disapprovals; mutate_mutate covers any create/update/remove; services_call_service reaches every other API method.
+- Money values are in micros (1.00 = 1,000,000). GOOGLE_ADS_MCP_READ_ONLY=true removes all write tools.
+"""
+
+_SERVER_KWARGS: dict[str, Any] = {
+    "version": SERVER_VERSION,
+    "instructions": INSTRUCTIONS,
+    "website_url": "https://github.com/AI-Shopping-Feeds/google-ads-mcp",
+    # Hide the text of unexpected exceptions; ExpectedErrorsMiddleware below
+    # keeps the messages that help the agent fix its call.
+    "mask_error_details": True,
+}
 
 if _CLIENT_ID and _CLIENT_SECRET:
     client_storage = create_client_storage()
@@ -51,9 +77,51 @@ if _CLIENT_ID and _CLIENT_SECRET:
         provider_kwargs["client_storage"] = client_storage
 
     auth = GoogleProvider(**provider_kwargs)
-    mcp = FastMCP("Google Ads Server", auth=auth)
+    mcp = FastMCP("Google Ads Server", auth=auth, **_SERVER_KWARGS)
 else:
-    mcp = FastMCP("Google Ads Server")
+    mcp = FastMCP("Google Ads Server", **_SERVER_KWARGS)
+
+
+def _expected_errors() -> tuple[type[BaseException], ...]:
+    """Errors whose message helps the agent fix the call."""
+    import google.auth.exceptions
+    from google.ads.googleads.errors import GoogleAdsException
+    from google.api_core.exceptions import GoogleAPICallError
+
+    return (
+        ValueError,
+        RuntimeError,
+        PermissionError,
+        FileNotFoundError,
+        google.auth.exceptions.GoogleAuthError,
+        GoogleAdsException,
+        GoogleAPICallError,
+    )
+
+
+class ExpectedErrorsMiddleware(Middleware):
+    """Re-raises expected errors as ToolError so their message reaches the client.
+
+    With mask_error_details=True, FastMCP replaces the text of any other
+    exception with a generic message.
+    """
+
+    async def on_call_tool(self, context: MiddlewareContext, call_next):
+        expected = _expected_errors()
+        try:
+            return await call_next(context)
+        except ToolError as exc:
+            # FastMCP masks the tool's exception into a generic ToolError and
+            # keeps the original as its cause.
+            cause = exc.__cause__
+            if isinstance(cause, expected) and not isinstance(cause, ToolError):
+                raise ToolError(str(cause)) from cause
+            raise
+        except expected as exc:
+            raise ToolError(str(exc)) from exc
+
+
+mcp.add_middleware(ExpectedErrorsMiddleware())
 
 
 def ensure_subscriptions_listen(server: FastMCP) -> bool:
@@ -137,6 +205,14 @@ def initialize_and_mount_tools(parent_mcp: FastMCP) -> None:
                 read_only and not _is_read_only_tool(sub_mcp, name)
             ):
                 sub_mcp.local_provider.remove_tool(name)
+
+        # Mounted servers must mask unexpected errors too, or their details
+        # reach the client even though the parent masks them.
+        sub_mcp._mask_error_details = parent_mcp._mask_error_details
+        if not any(
+            isinstance(m, ExpectedErrorsMiddleware) for m in sub_mcp.middleware
+        ):
+            sub_mcp.add_middleware(ExpectedErrorsMiddleware())
 
         # Determine prefix/namespace
         namespace_prefix = config.get_namespace_prefix(category)
