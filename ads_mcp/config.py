@@ -35,6 +35,9 @@ ALL_CATEGORIES = [
     "planning",
     "mutate",
     "services",
+    "policy",
+    "conversions",
+    "merchant_center",
 ]
 
 

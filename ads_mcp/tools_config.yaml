@@ -4,9 +4,9 @@
 # Modify this file to enable/disable tool namespaces or set custom prefixes.
 
 #
-# Tools that can change an account live in the `mutate` and `services`
-# namespaces. Set them to false here, or set GOOGLE_ADS_MCP_READ_ONLY=true,
-# to run the server read-only.
+# Tools that can change an account live in the `mutate`, `services`,
+# `conversions` and `merchant_center` namespaces. Set them to false here, or
+# set GOOGLE_ADS_MCP_READ_ONLY=true, to run the server read-only.
 
 namespaces:
   customers: true
@@ -15,3 +15,6 @@ namespaces:
   planning: true
   mutate: true
   services: true
+  policy: true
+  conversions: true
+  merchant_center: true

@@ -7,6 +7,154 @@
         }
       },
       "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Uploads offline click conversions (e.g. sales from a CRM) to a conversion action.\n\nFind the conversion action with `search` on `conversion_action`\n(type UPLOAD_CLICKS). Each conversion needs exactly one click ID and a\ntimestamp. Uploads run with partial failure, so valid rows are kept and\nerrors are reported per row in `partial_failure_error`.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "conversion_action_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the conversion action to credit."
+          },
+          "conversions": {
+            "description": "Items such as {\"gclid\": \"...\",\n\"conversion_date_time\": \"2026-10-30 14:05:00+00:00\",\n\"conversion_value\": 49.99, \"currency_code\": \"GBP\",\n\"order_id\": \"A123\"}. Use \"gbraid\" or \"wbraid\" instead of \"gclid\"\nfor iOS traffic. Other ClickConversion fields such as\n\"user_identifiers\" (enhanced conversions for leads) or\n\"consent\" are passed through.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the rows but do not record them.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "conversion_action_id",
+          "conversions"
+        ],
+        "type": "object"
+      },
+      "name": "conversions_upload_click_conversions",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Conversions Upload Click Conversions"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Lists every account under a manager (MCC) account, at all levels.\n\nEach row has the client's ID, name, level (1 = direct child), whether it\nis a manager, its status, currency, time zone and whether it is a test\naccount. Pass the manager ID as `login_customer_id` for the other tools\nwhen working on these accounts.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_hidden": {
+            "default": false,
+            "description": "Whether to include hidden accounts.",
+            "type": "boolean"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID, if the starting\nmanager is itself reached through another manager."
+          },
+          "manager_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The manager account to start from."
+          }
+        },
+        "required": [
+          "manager_customer_id"
+        ],
+        "type": "object"
+      },
+      "name": "customers_get_account_hierarchy",
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "type": "object",
+        "x-fastmcp-wrap-result": true
+      },
+      "title": "Customers Get Account Hierarchy"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
         "readOnlyHint": true
       },
       "description": "Returns ids of customers directly accessible by the user authenticating the call.\n\nUse this tool first to discover available customer IDs if the user hasn't\nprovided one. Most other tools require a valid customer ID as input.",
@@ -32,6 +180,253 @@
         "x-fastmcp-wrap-result": true
       },
       "title": "Customers List Accessible Customers"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Sends a link invitation from a Google Ads account to a Merchant Center account.\n\nAn admin of the Merchant Center account must then accept it, in Merchant\nCenter or with the Merchant Center MCP.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the Google Ads customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "merchant_center_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The Merchant Center account ID."
+          }
+        },
+        "required": [
+          "customer_id",
+          "merchant_center_id"
+        ],
+        "type": "object"
+      },
+      "name": "merchant_center_invite_link",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Merchant Center Invite Link"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Lists Merchant Center accounts linked to a Google Ads account, and pending invitations.\n\nShopping and Performance Max campaigns need a linked Merchant Center\naccount. Invitations sent from either side show their status (for example\nPENDING_APPROVAL or REQUESTED) until accepted or rejected.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the Google Ads customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "type": "object"
+      },
+      "name": "merchant_center_list_links",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Merchant Center List Links"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Unlinks a Merchant Center account from a Google Ads account.\n\nShopping and Performance Max campaigns that use the account's products\nstop serving those products.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the Google Ads customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "product_link_resource_name": {
+            "description": "e.g. customers/123/productLinks/456.",
+            "type": "string"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "product_link_resource_name"
+        ],
+        "type": "object"
+      },
+      "name": "merchant_center_remove_link",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Merchant Center Remove Link"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Accepts or rejects a link invitation that a Merchant Center account sent to this Google Ads account.\n\nFind invitations with `merchant_center_list_links`; only those with\nstatus PENDING_APPROVAL can be answered from the Google Ads side.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the Google Ads customer."
+          },
+          "invitation_resource_name": {
+            "description": "e.g. customers/123/productLinkInvitations/456.",
+            "type": "string"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "response": {
+            "description": "ACCEPTED or REJECTED.",
+            "enum": [
+              "ACCEPTED",
+              "REJECTED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_id",
+          "invitation_resource_name",
+          "response"
+        ],
+        "type": "object"
+      },
+      "name": "merchant_center_respond_to_invitation",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Merchant Center Respond To Invitation"
     },
     {
       "_meta": {
@@ -1334,6 +1729,96 @@
         "x-fastmcp-wrap-result": true
       },
       "title": "Planning Suggest Geo Targets"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Lists disapproved or limited ads, keywords and ad assets with their policy reasons.\n\nCovers non-removed items in non-removed campaigns. Each item has IDs,\nnames, approval and review status, and the policy topics with short\nevidence. `summary` counts items by policy topic so the biggest problems\nstand out.\n\nThe API cannot submit appeals; see `how_to_resolve` in the result.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "approval_statuses": {
+            "default": [
+              "DISAPPROVED",
+              "APPROVED_LIMITED"
+            ],
+            "description": "Which approval statuses to include.",
+            "items": {
+              "enum": [
+                "DISAPPROVED",
+                "APPROVED_LIMITED",
+                "AREA_OF_INTEREST_ONLY"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer."
+          },
+          "include": {
+            "default": [
+              "ads",
+              "keywords",
+              "assets"
+            ],
+            "description": "Which entity types to check.",
+            "items": {
+              "enum": [
+                "ads",
+                "keywords",
+                "assets"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "limit": {
+            "default": 200,
+            "description": "Maximum rows per entity type.",
+            "type": "integer"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "type": "object"
+      },
+      "name": "policy_list_policy_issues",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Policy List Policy Issues"
     },
     {
       "_meta": {

@@ -187,7 +187,7 @@ def format_output_value(value: Any) -> Any:
     if isinstance(value, proto.Enum):
         return value.name
     elif isinstance(value, proto.Message):
-        return proto.Message.to_dict(value)
+        return proto.Message.to_dict(value, use_integers_for_enums=False)
     elif isinstance(value, PbMessage):
         return MessageToDict(value, preserving_proto_field_name=True)
     elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):

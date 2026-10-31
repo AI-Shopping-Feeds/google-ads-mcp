@@ -74,7 +74,8 @@ never print secrets back to them.
 
 Names are `<namespace>_<tool>`.
 
-- Read: `customers_list_accessible_customers`, `search_search` (GAQL),
+- Read: `customers_list_accessible_customers`, `customers_get_account_hierarchy`,
+  `policy_list_policy_issues`, `merchant_center_list_links`, `search_search` (GAQL),
   `metadata_get_resource_metadata`, `planning_generate_keyword_ideas`,
   `planning_generate_keyword_historical_metrics`, `planning_suggest_geo_targets`,
   `services_list_services`.
@@ -83,7 +84,9 @@ Names are `<namespace>_<tool>`.
   `mutate_update_campaign_budget`, `mutate_add_keywords`,
   `mutate_add_negative_keywords`, `mutate_update_keyword`,
   `mutate_remove_resources`, `mutate_apply_recommendations`,
-  `mutate_dismiss_recommendations`, `services_call_service` (any RPC).
+  `mutate_dismiss_recommendations`, `conversions_upload_click_conversions`,
+  `merchant_center_invite_link`, `merchant_center_respond_to_invitation`,
+  `merchant_center_remove_link`, `services_call_service` (any RPC).
 
 ## 3. How to work
 
@@ -168,12 +171,27 @@ IDs (negative numbers) so later operations can refer to earlier ones:
 ]
 ```
 
-**Upload offline click conversions:** call `services_call_service` with
-`ConversionUploadService` / `upload_click_conversions` and
-`{"customer_id": "CID", "partial_failure": true, "conversions": [{"gclid": "...",
-"conversion_action": "customers/CID/conversionActions/ID",
-"conversion_date_time": "2026-10-30 12:00:00+00:00", "conversion_value": 49.99,
-"currency_code": "GBP"}]}`. `partial_failure` must be true for this method.
+**Upload offline click conversions:** find the conversion action ID with
+`search_search` on `conversion_action` (type `UPLOAD_CLICKS`). Then call
+`conversions_upload_click_conversions` with rows like
+`{"gclid": "...", "conversion_date_time": "2026-10-30 12:00:00+00:00",
+"conversion_value": 49.99, "currency_code": "GBP", "order_id": "A1"}`.
+Validate first, and report any `partial_failure_error` rows.
+
+**Disapproved ads and policy issues:** `policy_list_policy_issues` returns
+disapproved and limited ads, keywords and assets with their policy topics and
+evidence. Present them grouped by `summary.top_policy_topics`. The API can't
+file appeals: fix and edit the item (that triggers a new review), or send the
+user to Google Ads > Tools > Policy manager to appeal.
+
+**Link Merchant Center for Shopping/PMax:** `merchant_center_list_links`
+shows existing links and invitations. Then either:
+- `merchant_center_invite_link` sends an invitation, which a Merchant Center
+  admin then accepts, or
+- `merchant_center_respond_to_invitation` accepts one that Merchant Center sent.
+
+**Work across an MCC:** `customers_get_account_hierarchy` with the manager ID,
+then pass that manager ID as `login_customer_id` on other tools.
 
 **Keyword research:** `planning_suggest_geo_targets` to get location IDs, then
 `planning_generate_keyword_ideas` with seed keywords or a URL.

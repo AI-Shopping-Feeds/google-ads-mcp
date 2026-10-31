@@ -14,7 +14,7 @@
 
 """Tools for exposing simple, core API methods to the MCP server."""
 
-from typing import List
+from typing import Any, Dict, List
 from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
@@ -45,4 +45,51 @@ def list_accessible_customers() -> List[str]:
     return [
         cust_rn.removeprefix("customers/")
         for cust_rn in accessible_customers.resource_names
+    ]
+
+
+@customers_mcp.tool(annotations=ToolAnnotations(readOnlyHint=True))
+def get_account_hierarchy(
+    manager_customer_id: str | int,
+    include_hidden: bool = False,
+    login_customer_id: str | int | None = None,
+) -> List[Dict[str, Any]]:
+    """Lists every account under a manager (MCC) account, at all levels.
+
+    Each row has the client's ID, name, level (1 = direct child), whether it
+    is a manager, its status, currency, time zone and whether it is a test
+    account. Pass the manager ID as `login_customer_id` for the other tools
+    when working on these accounts.
+
+    Args:
+        manager_customer_id: The manager account to start from.
+        include_hidden: Whether to include hidden accounts.
+        login_customer_id: Optional manager customer ID, if the starting
+            manager is itself reached through another manager.
+    """
+    from ads_mcp.tools.search import search
+
+    conditions = ["customer_client.level >= 1"]
+    if not include_hidden:
+        conditions.append("customer_client.hidden = FALSE")
+    rows = search(
+        customer_id=manager_customer_id,
+        fields=[
+            "customer_client.id",
+            "customer_client.descriptive_name",
+            "customer_client.level",
+            "customer_client.manager",
+            "customer_client.status",
+            "customer_client.currency_code",
+            "customer_client.time_zone",
+            "customer_client.test_account",
+        ],
+        resource="customer_client",
+        conditions=conditions,
+        orderings=["customer_client.level ASC"],
+        login_customer_id=login_customer_id or manager_customer_id,
+    )
+    return [
+        {k.removeprefix("customer_client."): v for k, v in row.items()}
+        for row in rows
     ]

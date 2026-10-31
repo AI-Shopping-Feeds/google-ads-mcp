@@ -12,6 +12,9 @@ upstream server is read-only. This fork:
 - adds **write tools**: create, update and remove any resource through
   `GoogleAdsService.Mutate`, plus shortcuts for common changes,
 - adds **Keyword Planner** and geo-target lookup tools,
+- adds a one-call **policy issues** report (disapproved ads, keywords and assets
+  with reasons), **offline conversion uploads**, **Merchant Center linking**
+  and **MCC account hierarchy**,
 - exposes **every Google Ads API service method** (112 services in v26) through
   a generic `call_service` tool, for conversion uploads, Customer Match, reach
   planning, account creation and the rest,
@@ -38,6 +41,9 @@ Tool names are prefixed with their namespace, e.g. `search_search`,
 | Namespace | Tool | What it does |
 |---|---|---|
 | `customers` | `list_accessible_customers` | IDs of the customers the authenticated user can access. |
+| `customers` | `get_account_hierarchy` | Every account under a manager (MCC) account, at all levels. |
+| `policy` | `list_policy_issues` | Disapproved and limited ads, keywords and ad assets with policy topics and evidence, plus a top-reasons summary. |
+| `merchant_center` | `list_links` | Linked Merchant Center accounts and pending link invitations. |
 | `search` | `search` | Runs a GAQL query (reports, settings, structure, change history). |
 | `metadata` | `get_resource_metadata` | Selectable, filterable and sortable fields for a resource. |
 | `planning` | `generate_keyword_ideas` | Keyword Planner ideas from keywords, a URL or a site. |
@@ -60,6 +66,10 @@ Tool names are prefixed with their namespace, e.g. `search_search`,
 | `mutate` | `remove_resources` | Removes resources by resource name. |
 | `mutate` | `apply_recommendations` | Applies Google Ads recommendations. |
 | `mutate` | `dismiss_recommendations` | Dismisses Google Ads recommendations. |
+| `conversions` | `upload_click_conversions` | Uploads offline click conversions (gclid/gbraid/wbraid) with per-row errors. |
+| `merchant_center` | `invite_link` | Invites a Merchant Center account to link to the Ads account. |
+| `merchant_center` | `respond_to_invitation` | Accepts or rejects a link invitation from Merchant Center. |
+| `merchant_center` | `remove_link` | Unlinks a Merchant Center account. |
 | `services` | `call_service` | Calls any service method, e.g. `ConversionUploadService.upload_click_conversions`. |
 
 ### Write safety and read-only mode
@@ -70,7 +80,7 @@ Tool names are prefixed with their namespace, e.g. `search_search`,
 - `mutate` is atomic by default: if one operation fails, none are applied.
   Pass `partial_failure: true` to apply the valid ones.
 - Write tools carry MCP annotations (`readOnlyHint: false`, and
-  `destructiveHint: true` for removals and `call_service`), so clients that ask
+  `destructiveHint: true` for removals, unlinking and `call_service`), so clients that ask
   for confirmation before destructive tools will do so.
 - Set `GOOGLE_ADS_MCP_READ_ONLY=true` to drop every tool that can change an
   account. You can also disable the `mutate` and `services` namespaces in
