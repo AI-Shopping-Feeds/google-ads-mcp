@@ -41,6 +41,21 @@ class TestCoreTools(unittest.TestCase):
         mock_get_service.assert_called_once_with("CustomerService")
         mock_service.list_accessible_customers.assert_called_once()
 
+    @patch("ads_mcp.tools.search.search")
+    def test_get_account_hierarchy(self, mock_search):
+        """Tests that get_account_hierarchy queries customer_client and strips prefixes."""
+        mock_search.return_value = [
+            {"customer_client.id": 222, "customer_client.level": 1}
+        ]
+
+        result = core.get_account_hierarchy(manager_customer_id="111")
+
+        self.assertEqual(result, [{"id": 222, "level": 1}])
+        kwargs = mock_search.call_args.kwargs
+        self.assertEqual(kwargs["resource"], "customer_client")
+        self.assertIn("customer_client.hidden = FALSE", kwargs["conditions"])
+        self.assertEqual(kwargs["login_customer_id"], "111")
+
 
 if __name__ == "__main__":
     unittest.main()

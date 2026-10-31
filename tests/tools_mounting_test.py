@@ -124,3 +124,30 @@ class TestToolsMounting(unittest.IsolatedAsyncioTestCase):
 
         self.assertNotIn("accounts_list_accessible_customers", tool_names)
         self.assertIn("search_search", tool_names)
+
+    @patch.dict("os.environ", {"GOOGLE_ADS_MCP_READ_ONLY": "true"})
+    @patch("ads_mcp.config.ToolsConfig.load")
+    async def test_read_only_mode_drops_write_tools(self, mock_load):
+        """Tests that GOOGLE_ADS_MCP_READ_ONLY removes tools that can modify accounts."""
+        mock_load.return_value = ToolsConfig(
+            {
+                "namespaces": {
+                    "search": True,
+                    "planning": True,
+                    "mutate": True,
+                    "services": True,
+                }
+            }
+        )
+
+        parent = FastMCP("Test Parent")
+        initialize_and_mount_tools(parent)
+
+        tools = await parent.list_tools()
+        tool_names = [t.name for t in tools]
+
+        self.assertIn("search_search", tool_names)
+        self.assertIn("planning_generate_keyword_ideas", tool_names)
+        self.assertIn("services_list_services", tool_names)
+        self.assertNotIn("services_call_service", tool_names)
+        self.assertFalse(any(n.startswith("mutate_") for n in tool_names))

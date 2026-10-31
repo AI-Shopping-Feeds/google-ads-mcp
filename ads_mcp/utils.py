@@ -22,11 +22,13 @@ from google.protobuf.message import Message as PbMessage
 from google.protobuf.json_format import MessageToDict
 import logging
 from google.ads.googleads.client import GoogleAdsClient
-from google.ads.googleads.v25.services.services.google_ads_service import (
+from google.ads.googleads.v26.services.services.google_ads_service import (
     GoogleAdsServiceClient,
 )
 
+from google.ads.googleads.errors import GoogleAdsException
 from google.ads.googleads.util import get_nested_attr
+from fastmcp.exceptions import ToolError
 import google.auth
 from ads_mcp.mcp_header_interceptor import MCPHeaderInterceptor
 import os
@@ -39,13 +41,18 @@ from unittest.mock import patch
 # filename for generated field information used by search
 _GAQL_FILENAME = "gaql_resources.txt"
 
+# Google Ads API version used by every service and type this server creates.
+API_VERSION = "v26"
+
+# When set to a truthy value, tools that can modify an account are not mounted.
+READ_ONLY_ENV_VAR = "GOOGLE_ADS_MCP_READ_ONLY"
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # OAuth scope for the Google Ads API. Google Ads does not publish a separate
-# read-only scope; access is restricted to read methods by the tools this
-# server exposes (see ads_mcp/tools/).
+# read-only scope; set GOOGLE_ADS_MCP_READ_ONLY=true to expose only read tools.
 _ADS_SCOPE = "https://www.googleapis.com/auth/adwords"
 
 
@@ -137,11 +144,37 @@ def get_googleads_service(
 ) -> GoogleAdsServiceClient:
     return _get_googleads_client(
         login_customer_id=login_customer_id
-    ).get_service(serviceName, interceptors=[MCPHeaderInterceptor()])
+    ).get_service(
+        serviceName, version=API_VERSION, interceptors=[MCPHeaderInterceptor()]
+    )
 
 
 def get_googleads_type(typeName: str):
-    return _get_googleads_client().get_type(typeName)
+    return _get_googleads_client().get_type(typeName, version=API_VERSION)
+
+
+def is_read_only() -> bool:
+    """Returns True when the server is configured to expose only read tools."""
+    return os.environ.get(READ_ONLY_ENV_VAR, "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+def google_ads_tool_error(ex: GoogleAdsException) -> ToolError:
+    """Converts a GoogleAdsException into a ToolError with readable details."""
+    error_msgs = []
+    for error in ex.failure.errors:
+        msg = f"Google Ads API Error: {error.message}"
+        if error.location and error.location.field_path_elements:
+            path = ".".join(
+                el.field_name + (f"[{el.index}]" if "index" in el else "")
+                for el in error.location.field_path_elements
+            )
+            msg += f" (at {path})"
+        error_msgs.append(msg)
+    return ToolError(f"Request ID: {ex.request_id}\n" + "\n".join(error_msgs))
 
 
 def get_googleads_client(
@@ -154,7 +187,7 @@ def format_output_value(value: Any) -> Any:
     if isinstance(value, proto.Enum):
         return value.name
     elif isinstance(value, proto.Message):
-        return proto.Message.to_dict(value)
+        return proto.Message.to_dict(value, use_integers_for_enums=False)
     elif isinstance(value, PbMessage):
         return MessageToDict(value, preserving_proto_field_name=True)
     elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):

@@ -3,7 +3,20 @@
 # Tools configuration for the Google Ads MCP server.
 # Modify this file to enable/disable tool namespaces or set custom prefixes.
 
+#
+# Tools that can change an account live in the `mutate`, `services`,
+# `conversions`, `merchant_center` and `youtube` namespaces. Set them to
+# false here, or set GOOGLE_ADS_MCP_READ_ONLY=true, to run the server
+# read-only.
+
 namespaces:
   customers: true
   search: true
   metadata: true
+  planning: true
+  mutate: true
+  services: true
+  policy: true
+  conversions: true
+  merchant_center: true
+  youtube: true
