@@ -85,9 +85,21 @@ def ensure_subscriptions_listen(server: FastMCP) -> bool:
 ensure_subscriptions_listen(mcp)
 
 
+def _is_read_only_tool(sub_mcp: FastMCP, name: str) -> bool:
+    """Returns True if the tool declares readOnlyHint=True."""
+    tool = next(
+        v
+        for k, v in sub_mcp.local_provider._components.items()
+        if k.startswith("tool:") and v.name == name
+    )
+    annotations = getattr(tool, "annotations", None)
+    return bool(annotations and annotations.read_only_hint)
+
+
 def initialize_and_mount_tools(parent_mcp: FastMCP) -> None:
     """Loads the tools configuration and dynamically mounts the tools sub-servers."""
     from ads_mcp.config import ToolsConfig
+    from ads_mcp.utils import is_read_only
     import importlib
     import pkgutil
     import ads_mcp.tools as tools_pkg
@@ -119,8 +131,11 @@ def initialize_and_mount_tools(parent_mcp: FastMCP) -> None:
             if key.startswith("tool:"):
                 tool_names.append(val.name)
 
+        read_only = is_read_only()
         for name in tool_names:
-            if not config.is_tool_enabled(category, name):
+            if not config.is_tool_enabled(category, name) or (
+                read_only and not _is_read_only_tool(sub_mcp, name)
+            ):
                 sub_mcp.local_provider.remove_tool(name)
 
         # Determine prefix/namespace

@@ -9,7 +9,7 @@
       "annotations": {
         "readOnlyHint": true
       },
-      "description": "Returns ids of customers directly accessible by the user authenticating the call.\n\nUse this tool first to discover available customer IDs if the user hasn't\nprovided one. Most other tools require a valid customer ID as input.\n\nReturns:\n    List[str]: A list of customer IDs.",
+      "description": "Returns ids of customers directly accessible by the user authenticating the call.\n\nUse this tool first to discover available customer IDs if the user hasn't\nprovided one. Most other tools require a valid customer ID as input.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {},
@@ -85,19 +85,24 @@
         }
       },
       "annotations": {
-        "readOnlyHint": true
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
       },
-      "description": "Fetches data from the Google Ads API using the search method",
+      "description": "Adds positive keywords to an ad group.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
-          "conditions": {
-            "default": [],
-            "description": "List of conditions to filter the data, combined using AND clauses",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
+          "ad_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the ad group to add keywords to."
           },
           "customer_id": {
             "anyOf": [
@@ -108,26 +113,15 @@
                 "type": "integer"
               }
             ],
-            "description": "The id of the customer"
+            "description": "The ID of the customer that owns the ad group."
           },
-          "fields": {
-            "description": "The fields to fetch",
+          "keywords": {
+            "description": "Items of the form {\"text\": \"running shoes\",\n\"match_type\": \"EXACT\" | \"PHRASE\" | \"BROAD\",\n\"cpc_bid_micros\": 1500000 (optional),\n\"status\": \"ENABLED\" | \"PAUSED\" (optional, default ENABLED),\n\"final_urls\": [\"https://...\"] (optional)}.",
             "items": {
-              "type": "string"
+              "additionalProperties": true,
+              "type": "object"
             },
             "type": "array"
-          },
-          "limit": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "The maximum number of rows to return"
           },
           "login_customer_id": {
             "anyOf": [
@@ -142,18 +136,1274 @@
               }
             ],
             "default": null,
-            "description": "Optional manager customer ID to use as the login-customer-id header."
+            "description": "Optional manager customer ID."
+          },
+          "partial_failure": {
+            "default": false,
+            "description": "If True, add the valid keywords and report the rest.",
+            "type": "boolean"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "ad_group_id",
+          "keywords"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_add_keywords",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Add Keywords"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Adds negative keywords to a campaign or an ad group.\n\nGive exactly one of `campaign_id` or `ad_group_id`. For account-level or\nshared negative keyword lists, use `mutate` with\n`shared_criterion_operation`.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "ad_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The ad group to add negatives to."
+          },
+          "campaign_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The campaign to add negatives to."
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer."
+          },
+          "keywords": {
+            "description": "Items of the form {\"text\": \"free\",\n\"match_type\": \"EXACT\" | \"PHRASE\" | \"BROAD\"}.",
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "partial_failure": {
+            "default": false,
+            "description": "If True, add the valid keywords and report the rest.",
+            "type": "boolean"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "keywords"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_add_negative_keywords",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Add Negative Keywords"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Applies Google Ads recommendations with their default parameters.\n\nList recommendations first with `search` on the `recommendation` resource\n(select `recommendation.resource_name`, `recommendation.type` and the\ntype-specific detail fields). For custom parameters use `call_service`\nwith RecommendationService.ApplyRecommendation.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "partial_failure": {
+            "default": false,
+            "description": "If True, apply what can be applied and report the rest.",
+            "type": "boolean"
+          },
+          "recommendation_resource_names": {
+            "description": "Recommendation resource names to apply.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "customer_id",
+          "recommendation_resource_names"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_apply_recommendations",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Apply Recommendations"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Dismisses Google Ads recommendations so they stop being suggested.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "partial_failure": {
+            "default": false,
+            "description": "If True, dismiss what can be dismissed and report the rest.",
+            "type": "boolean"
+          },
+          "recommendation_resource_names": {
+            "description": "Recommendation resource names to dismiss.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "customer_id",
+          "recommendation_resource_names"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_dismiss_recommendations",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Dismiss Recommendations"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Creates, updates or removes any Google Ads resources in one atomic request.\n\nWraps GoogleAdsService.Mutate, which supports every mutable resource\n(campaigns, budgets, ad groups, ads, keywords, criteria, assets, asset\ngroups, labels, conversion actions, bidding strategies, shared sets,\nexperiments, user lists and more).\n\nEach item in `operations` is a MutateOperation with exactly one key named\n`<resource>_operation` (snake_case), holding one of `create`, `update` or\n`remove`. Field names are snake_case and enums are their string names.\nUpdates must include `update_mask` listing the changed field paths.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer to change (digits only)."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID to use as the\nlogin-customer-id header."
+          },
+          "operations": {
+            "description": "The MutateOperation objects to apply, in order.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "partial_failure": {
+            "default": false,
+            "description": "If True, apply the valid operations and report errors\nfor the rest instead of failing the whole request.",
+            "type": "boolean"
+          },
+          "response_content_type": {
+            "default": "RESOURCE_NAME_ONLY",
+            "description": "RESOURCE_NAME_ONLY (default) or\nMUTABLE_RESOURCE to return the full resources after the change.",
+            "enum": [
+              "RESOURCE_NAME_ONLY",
+              "MUTABLE_RESOURCE"
+            ],
+            "type": "string"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "operations"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_mutate",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Mutate"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Permanently removes resources by resource name.\n\nWorks for any removable resource, e.g. `customers/123/campaigns/456`,\n`customers/123/adGroups/789`, `customers/123/adGroupAds/789~111`,\n`customers/123/adGroupCriteria/789~222`, `customers/123/campaignCriteria/456~333`,\n`customers/123/labels/444`. Removed campaigns, ad groups and ads cannot be\nre-enabled. To stop serving temporarily, pause instead.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer that owns the resources."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "partial_failure": {
+            "default": false,
+            "description": "If True, remove what can be removed and report the rest.",
+            "type": "boolean"
+          },
+          "resource_names": {
+            "description": "Full resource names to remove.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "resource_names"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_remove_resources",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Remove Resources"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Enables or pauses one or more ad groups.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "ad_group_ids": {
+            "description": "The IDs of the ad groups to change.",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer that owns the ad groups."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "status": {
+            "description": "ENABLED or PAUSED.",
+            "enum": [
+              "ENABLED",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "ad_group_ids",
+          "status"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_update_ad_group_status",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Update Ad Group Status"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Enables or pauses ads within an ad group.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "ad_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the ad group containing the ads."
+          },
+          "ad_ids": {
+            "description": "The IDs of the ads to change.",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer that owns the ads."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "status": {
+            "description": "ENABLED or PAUSED.",
+            "enum": [
+              "ENABLED",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "ad_group_id",
+          "ad_ids",
+          "status"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_update_ad_status",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Update Ad Status"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Sets the daily amount of a campaign budget.\n\nFind a campaign's budget with the `search` tool by selecting\n`campaign.campaign_budget` from `campaign`. A shared budget changes for\nevery campaign that uses it.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "amount_micros": {
+            "description": "The new daily amount in micros (e.g. 25000000 = 25.00).",
+            "type": "integer"
+          },
+          "budget_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the campaign budget."
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer that owns the budget."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "budget_id",
+          "amount_micros"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_update_campaign_budget",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Update Campaign Budget"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Enables or pauses one or more campaigns.\n\nTo delete a campaign use `remove_resources` instead.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "campaign_ids": {
+            "description": "The IDs of the campaigns to change.",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer that owns the campaigns."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "status": {
+            "description": "ENABLED or PAUSED.",
+            "enum": [
+              "ENABLED",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "campaign_ids",
+          "status"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_update_campaign_status",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Update Campaign Status"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Changes the status and/or max CPC bid of an existing keyword.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "ad_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the ad group containing the keyword."
+          },
+          "cpc_bid_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The new max CPC bid in micros."
+          },
+          "criterion_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The criterion ID of the keyword."
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The ID of the customer."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ENABLED",
+                  "PAUSED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "ENABLED or PAUSED."
+          },
+          "validate_only": {
+            "default": false,
+            "description": "If True, validate the request but do not apply it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "ad_group_id",
+          "criterion_id"
+        ],
+        "type": "object"
+      },
+      "name": "mutate_update_keyword",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Mutate Update Keyword"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Returns monthly search volume history, competition and bid ranges for specific keywords.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "Any customer ID the user can access."
+          },
+          "geo_target_ids": {
+            "default": [
+              2840
+            ],
+            "description": "Geo target constant IDs (2840 = United States).",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "keywords": {
+            "description": "Up to 10,000 keywords to look up.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "language_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "default": 1000,
+            "description": "Language constant ID (1000 = English)."
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "network": {
+            "default": "GOOGLE_SEARCH",
+            "description": "GOOGLE_SEARCH or GOOGLE_SEARCH_AND_PARTNERS.",
+            "enum": [
+              "GOOGLE_SEARCH",
+              "GOOGLE_SEARCH_AND_PARTNERS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_id",
+          "keywords"
+        ],
+        "type": "object"
+      },
+      "name": "planning_generate_keyword_historical_metrics",
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "type": "object",
+        "x-fastmcp-wrap-result": true
+      },
+      "title": "Planning Generate Keyword Historical Metrics"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Returns keyword ideas with search volume, competition and bid ranges (Keyword Planner).\n\nSeed with `keywords`, a page `url`, a whole `site` domain, or keywords plus\na url. Use `suggest_geo_targets` to find geo target IDs.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "Any customer ID the user can access (used for billing context)."
+          },
+          "geo_target_ids": {
+            "default": [
+              2840
+            ],
+            "description": "Geo target constant IDs; 2840 = United States,\n2826 = United Kingdom, 2036 = Australia, 2124 = Canada.",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "include_adult_keywords": {
+            "default": false,
+            "description": "Whether to include adult keywords.",
+            "type": "boolean"
+          },
+          "keywords": {
+            "default": [],
+            "description": "Seed keywords.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "language_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "default": 1000,
+            "description": "Language constant ID; 1000 = English, 1001 = German,\n1002 = French, 1003 = Spanish."
+          },
+          "limit": {
+            "default": 100,
+            "description": "Maximum number of ideas to return.",
+            "type": "integer"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "network": {
+            "default": "GOOGLE_SEARCH",
+            "description": "GOOGLE_SEARCH or GOOGLE_SEARCH_AND_PARTNERS.",
+            "enum": [
+              "GOOGLE_SEARCH",
+              "GOOGLE_SEARCH_AND_PARTNERS"
+            ],
+            "type": "string"
+          },
+          "site": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "A domain such as example.com to seed ideas from (use alone)."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "A page URL to seed ideas from (can be combined with keywords)."
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "type": "object"
+      },
+      "name": "planning_generate_keyword_ideas",
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "type": "object",
+        "x-fastmcp-wrap-result": true
+      },
+      "title": "Planning Generate Keyword Ideas"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Finds geo target constants (IDs for countries, regions, cities) by name.\n\nUse the returned `geo_target_constant.id` values for keyword planning and\nfor location targeting in `mutate` (as `geoTargetConstants/<id>`).",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "country_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional two-letter country code to narrow results, e.g. \"GB\"."
+          },
+          "locale": {
+            "default": "en",
+            "description": "Language of the returned names, e.g. \"en\".",
+            "type": "string"
+          },
+          "location_names": {
+            "description": "Place names to look up, e.g. [\"London\", \"Manchester\"].",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          }
+        },
+        "required": [
+          "location_names"
+        ],
+        "type": "object"
+      },
+      "name": "planning_suggest_geo_targets",
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "type": "object",
+        "x-fastmcp-wrap-result": true
+      },
+      "title": "Planning Suggest Geo Targets"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Fetches data from the Google Ads API using the search method\n\n    Args:\n        customer_id: The id of the customer\n        fields: The fields to fetch\n        resource: The resource to return fields from\n        conditions: List of conditions to filter the data, combined using AND clauses\n        orderings: How the data is ordered\n        limit: The maximum number of rows to return\n        login_customer_id: Optional manager customer ID to use as the login-customer-id header.\n\n    \n\n### Hints\n    Language Grammar can be found at https://developers.google.com/google-ads/api/docs/query/grammar\n    All resources and descriptions are found at https://developers.google.com/google-ads/api/fields/latest/overview\n    If the query fails, a ToolError will be raised with the error details.\n\n    For Conversion issues try looking in offline_conversion_upload_conversion_action_summary\n\n### Hint for customer_id\n    should be a string of numbers without punctuation\n    if presented in the form 123-456-7890 remove the hyphens and use 1234567890\n\n### Hints for Dates\n    All dates should be in the form YYYY-MM-DD and must include the dashes (-)\n    Date ranges must be finite and must include a start and end date\n\n### Hints for limits\n    Requests to resource change_event must specify a LIMIT of less than or equal to 10000\n\n### Hints for conversions questions\n    https://developers.google.com/google-ads/api/docs/conversions/upload-summaries \n\n\n### Hints for all resources\n    To find out which specific fields (including compatible metrics and segments) you can select, filter by, or sort by for a given resource, you MUST use the `get_resource_metadata` tool.\n    Do not guess the fields. Use the tool to look them up.\n    Once you have the fields, ensure the whole field name is used (e.g., 'campaign.id', not just 'id'). Wildcards and partial fields are not allowed.\n\n### Valid resources\n    What follows is a list of valid resources that can be queried.\n    accessible_bidding_strategy\naccount_budget\naccount_budget_proposal\naccount_link\nad\nad_group\nad_group_ad\nad_group_ad_asset_combination_view\nad_group_ad_asset_view\nad_group_ad_label\nad_group_asset\nad_group_asset_set\nad_group_audience_view\nad_group_bid_modifier\nad_group_criterion\nad_group_criterion_customizer\nad_group_criterion_label\nad_group_criterion_simulation\nad_group_customizer\nad_group_label\nad_group_simulation\nad_parameter\nad_schedule_view\nage_range_view\nai_max_search_term_ad_combination_view\nandroid_privacy_shared_key_google_ad_group\nandroid_privacy_shared_key_google_campaign\nandroid_privacy_shared_key_google_network_type\napp_top_combination_view\napplied_incentive\nasset\nasset_field_type_view\nasset_group\nasset_group_asset\nasset_group_listing_group_filter\nasset_group_product_group_view\nasset_group_signal\nasset_group_top_combination_view\nasset_set\nasset_set_asset\nasset_set_type_view\naudience\nbatch_job\nbidding_data_exclusion\nbidding_seasonality_adjustment\nbidding_strategy\nbidding_strategy_simulation\nbilling_setup\ncall_view\ncampaign\ncampaign_aggregate_asset_view\ncampaign_asset\ncampaign_asset_set\ncampaign_audience_view\ncampaign_bid_modifier\ncampaign_budget\ncampaign_conversion_goal\ncampaign_criterion\ncampaign_customizer\ncampaign_draft\ncampaign_goal_config\ncampaign_group\ncampaign_label\ncampaign_search_term_insight\ncampaign_search_term_view\ncampaign_shared_set\ncampaign_simulation\ncarrier_constant\ncart_data_sales_view\nchange_event\nchange_status\nchannel_aggregate_asset_view\nclick_view\ncombined_audience\ncontent_criterion_view\nconversion_action\nconversion_custom_variable\nconversion_goal_campaign_config\nconversion_value_rule\nconversion_value_rule_set\ncurrency_constant\ncustom_audience\ncustom_conversion_goal\ncustom_interest\ncustomer\ncustomer_asset\ncustomer_asset_set\ncustomer_client\ncustomer_client_link\ncustomer_conversion_goal\ncustomer_customizer\ncustomer_label\ncustomer_manager_link\ncustomer_negative_criterion\ncustomer_search_term_insight\ncustomer_user_access\ncustomer_user_access_invitation\ncustomizer_attribute\ndata_link\ndetail_content_suitability_placement_view\ndetail_placement_view\ndetailed_demographic\ndisplay_keyword_view\ndistance_view\ndomain_category\ndynamic_search_ads_search_term_view\nexpanded_landing_page_view\nexperiment\nexperiment_arm\nfinal_url_expansion_asset_view\ngender_view\ngeo_target_constant\ngeographic_view\ngoal\ngroup_content_suitability_placement_view\ngroup_placement_view\nhotel_group_view\nhotel_performance_view\nhotel_reconciliation\nincome_range_view\nkeyword_plan\nkeyword_plan_ad_group\nkeyword_plan_ad_group_keyword\nkeyword_plan_campaign\nkeyword_plan_campaign_keyword\nkeyword_theme_constant\nkeyword_view\nlabel\nlanding_page_view\nlanguage_constant\nlead_form_submission_data\nlife_event\nlocal_services_employee\nlocal_services_lead\nlocal_services_lead_conversation\nlocal_services_verification_artifact\nlocation_interest_view\nlocation_view\nmanaged_placement_view\nmatched_location_interest_view\nmedia_file\nmobile_app_category_constant\nmobile_device_constant\nmulti_party_auth_review\noffline_conversion_upload_client_summary\noffline_conversion_upload_conversion_action_summary\noffline_user_data_job\noperating_system_version_constant\npaid_organic_search_term_view\nparental_status_view\nper_store_view\nperformance_max_placement_view\nproduct_category_constant\nproduct_group_view\nproduct_link\nproduct_link_invitation\nqualifying_question\nrecommendation\nrecommendation_subscription\nremarketing_action\nsearch_term_view\nshared_criterion\nshared_set\nshopping_performance_view\nshopping_product\nsmart_campaign_search_term_view\nsmart_campaign_setting\ntargeting_expansion_view\nthird_party_app_analytics_link\ntopic_constant\ntopic_view\ntravel_activity_group_view\ntravel_activity_performance_view\nuser_interest\nuser_list\nuser_list_customer_type\nuser_location_view\nvideo\nvideo_enhancement\nwebpage_view\nyou_tube_video_upload",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "orderings": {
             "default": [],
-            "description": "How the data is ordered",
             "items": {
               "type": "string"
             },
             "type": "array"
           },
           "resource": {
-            "description": "The resource to return fields from",
             "type": "string"
           }
         },
@@ -182,6 +1432,94 @@
         "x-fastmcp-wrap-result": true
       },
       "title": "Search Search"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Calls any Google Ads API service method with a raw request.\n\nUse this only when no dedicated tool fits, for example:\nConversionUploadService.upload_click_conversions,\nConversionAdjustmentUploadService.upload_conversion_adjustments,\nOfflineUserDataJobService (Customer Match), UserDataService,\nReachPlanService.generate_reach_forecast,\nAudienceInsightsService.generate_insights_finder_report,\nCustomerService.create_customer_client, BatchJobService,\nExperimentService, ShareablePreviewService or\nKeywordPlanIdeaService.generate_keyword_forecast_metrics.\n\nMany methods change the account. Methods that support it accept\n`validate_only: true` in the request to check it without applying it.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional manager customer ID."
+          },
+          "method": {
+            "description": "snake_case method name, e.g. \"upload_click_conversions\".",
+            "type": "string"
+          },
+          "request": {
+            "additionalProperties": true,
+            "description": "The request message as a dict with snake_case field names\nand enum values as strings. Include `customer_id` where the\nrequest has one (digits only).",
+            "type": "object"
+          },
+          "service": {
+            "description": "Service name from `list_services`, e.g. \"ConversionUploadService\".",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service",
+          "method",
+          "request"
+        ],
+        "type": "object"
+      },
+      "name": "services_call_service",
+      "title": "Services Call Service"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": []
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "description": "Lists the Google Ads API services and methods available to `call_service`.\n\nWithout arguments returns every service and its methods. With `service`\n(e.g. \"ConversionUploadService\") also returns the request fields of each\nmethod, so you can build a request for `call_service`. Full request\ndocumentation is at\nhttps://developers.google.com/google-ads/api/reference/rpc/latest/overview",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional service name to describe in detail."
+          }
+        },
+        "type": "object"
+      },
+      "name": "services_list_services",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Services List Services"
     }
   ]
 }
